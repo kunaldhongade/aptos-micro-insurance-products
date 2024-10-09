@@ -1,14 +1,15 @@
-# Simple Payment System - Frontend
+# Micro-Insurance System - Frontend
 
-This is the frontend for the **Simple Payment System** built on the **Aptos Blockchain**. The platform allows users to send and receive payments using the Aptos native token (**APT**) via smart contracts.
+This is the frontend for the **Micro-Insurance System** built on the **Aptos Blockchain**. The platform enables users to purchase micro-insurance policies, request claims, and receive payouts, with all actions securely managed via smart contracts.
 
 ## Key Features
 
-- **Send Payments**: Users can send payments to other addresses on the Aptos network.
-- **View Payments**: Users can view their transaction history and payment details.
-- **Refund Payments**: Refunds can be initiated automatically based on transaction history.
-- **Unique Payment IDs**: Every payment is assigned a unique ID, which can be used to reference transactions.
-- **Global Payment System**: No individual initialization is needed for each user, allowing for a streamlined payment process.
+- **View Available Policies**: Users can browse through a list of pre-created insurance policies available for purchase.
+- **Purchase Insurance Policies**: Users can purchase micro-insurance policies directly using Aptos native token (**APT**).
+- **Claim Requests**: Users can request insurance claims after purchasing a policy.
+- **Claim Verification**: Claims are reviewed and verified by policy creators.
+- **Payouts**: Verified claims trigger payouts of the specified claimable amount directly to the user.
+- **Policy Management**: Policy creators can view and manage policies and verify customer claims.
 
 ## Prerequisites
 
@@ -25,7 +26,7 @@ Before running the project, ensure you have the following installed:
 First, clone the project repository to your local machine:
 
 ```bash
-cd payment-system
+cd micro-insurance-system
 ```
 
 ### 2. Install Dependencies
@@ -47,9 +48,9 @@ yarn install
 You need to configure the environment variables for the frontend to interact with the Aptos blockchain. Create a `.env` file in the project root and add the following variables:
 
 ```bash
-PROJECT_NAME=GlobalPaymentSystem
+PROJECT_NAME=MicroInsuranceSystem
 VITE_APP_NETWORK=testnet
-VITE_MODULE_ADDRESS=0x28a4ba85d2158b999307af0ff676a986f1897b4a9c287b5ab3bbbea8636bb31e
+VITE_MODULE_ADDRESS=0x<your_contract_address>
 ```
 
 Adjust the `NODE_URL` and `FAUCET_URL` if you are using **Testnet** or **Mainnet** instead of Devnet.
@@ -74,35 +75,44 @@ The app will be available at `http://localhost:5173`.
 
 ### 1. Connect Wallet
 
-Upon opening the application, you'll be prompted to connect your Aptos wallet (e.g., Petra Wallet). This will allow you to interact with the Aptos blockchain and manage your payments.
+Upon opening the application, you'll be prompted to connect your Aptos wallet (e.g., Petra Wallet). This allows you to interact with the blockchain and perform operations such as purchasing policies and requesting claims.
 
-### 2. Send Payment
+### 2. View Available Policies
 
-To send a payment:
+Users can browse the **Policies** section to view the available insurance policies. Each policy will display details such as:
 
-- Navigate to the **Send Payment** section.
-- Enter the recipient's wallet address, the amount in APT, and any additional details.
-- Click **Send Payment** to initiate the transaction.
+- Policy description
+- Premium amount
+- Maximum claimable amount
+- Type (e.g., health, auto)
+- Yearly or one-time payment options
 
-The transaction will be confirmed via your connected Aptos wallet.
+### 3. Purchase Policy
 
-### 3. View Payment History
+To purchase an insurance policy:
 
-In the **Payment History** section, you can view all your past transactions, including the payment ID, amount, recipient, and date.
+- Select the policy you want to purchase.
+- The platform will prompt you to pay the premium amount in **APT** via your connected Aptos wallet.
+- Once purchased, the policy will be added to your list of active policies.
 
-### 4. Refund Payments
+### 4. Request Claim
 
-To initiate a refund for a transaction:
+To request an insurance claim:
 
-- Go to **Refund Payment**.
-- Select the payment you want to refund based on the unique payment ID.
-- Click **Refund** to initiate the refund transaction.
+- Navigate to **My Policies** and select the policy you want to claim.
+- Click on **Request Claim**. The request will be submitted to the policy creator for verification.
 
-This will transfer the payment amount back to the original sender without needing to manually specify the amount.
+### 5. Claim Verification and Payout
+
+For policy creators, after receiving a claim request:
+
+- Go to **Manage Policies** and select the relevant policy.
+- Review the claim request and click **Verify** if the claim is legitimate.
+- Once verified, the claim will be automatically paid out to the customer.
 
 ## Scripts
 
-- **`npm start`**: Starts the development server.
+- **`npm run dev`**: Starts the development server.
 - **`npm run build`**: Builds the project for production.
 - **`npm test`**: Runs unit tests.
 
@@ -118,6 +128,4 @@ The project uses the following key dependencies:
 
 ## Conclusion
 
-This frontend provides a seamless way to interact with the Simple Payment System smart contract on Aptos. Users can easily manage their payments, refunds, and transaction history with the secure and transparent nature of blockchain technology.
-
-If you have any questions or need assistance with using the platform, feel free to reach out!
+This frontend allows users to seamlessly interact with the **Micro-Insurance System**, providing a decentralized way to manage policies, request claims, and handle payouts. With a user-friendly interface and blockchain security, users and policy creators can manage their insurance needs transparently.

@@ -1,173 +1,121 @@
-# Freelance Job Marketplace - Smart Contract
+# MicroInsuranceSystem Smart Contract
 
-This repository contains the **Freelance Job Marketplace** smart contract developed on the **Aptos Blockchain**. The smart contract facilitates job posting, job acceptance, task completion, and payments between clients and freelancers using the Aptos native token, **APT**.
+## Overview
+
+This Move module provides a decentralized micro-insurance system, enabling users to purchase insurance policies, claim payouts, and manage insurance policies through smart contracts on the Aptos blockchain. The module features global storage for policies and includes essential insurance functionalities such as policy creation, premium payments, claim requests, verification, and payouts.
 
 ## Key Features
 
-- **Job Posting**: Clients can post jobs with specific descriptions, deadlines, and payment amounts.
-- **Freelancer Interaction**: Freelancers can view available jobs, accept them, and mark jobs as completed.
-- **Secure Payments**: Payments are automatically handled by the contract once the job is completed, and they are done in **APT** (Aptos native coin).
-- **Decentralized**: The entire platform runs on smart contracts, ensuring transparency and trust for both clients and freelancers.
+- **Global Policy Management**: Stores all policies under a single global address.
+- **Policy Creation**: Allows creators to issue new policies with parameters like premium amount, policy type, and maximum claimable amount.
+- **Policy Purchase**: Customers can purchase a pre-defined insurance policy by paying the specified premium.
+- **Claim Process**: Insured customers can request and receive claim payouts upon verification.
+- **Claim Verification**: Policy creators verify and approve customer claims.
+- **Views for Policies**: Customers and creators can view policies based on ID, creator, or customer.
 
-## Prerequisites
+## Installation & Usage
 
-Before interacting with the contract, ensure you have the following:
+### 1. Initialize Global Policy System
 
-- **Aptos CLI** installed (for deploying and interacting with the contract)
-- **Aptos Account** with test funds on **Devnet** (or Mainnet, if live)
-
-## Setup Instructions
-
-1. **Clone the Repository**
-
-   move to the smart contract folder to your local machine:
-
-   ```bash
-   cd contract
-   ```
-
-2. **Install Aptos CLI**
-
-   Install the Aptos CLI by following the official [Aptos CLI installation guide](https://aptos.dev/cli-tools/aptos-cli-tool/install-aptos-cli).
-
-3. **Configure the Aptos Network**
-
-   Configure the Aptos network by running:
-
-   ```bash
-   aptos init
-   ```
-
-   Choose the appropriate network (`devnet`, `testnet`, or `mainnet`) and set up your account.
-
-4. **Compile the Contract**
-
-   Compile the contract to the Aptos network using:
-
-   ```bash
-   aptos move compile
-   ```
-
-5. **Deploy the Contract**
-
-   Deploy the contract to the Aptos network using:
-
-   ```bash
-   aptos move publish
-   ```
-
-   This will deploy the smart contract to your Aptos account on the selected network.
-
-## Smart Contract Functions
-
-### 1. **initialize_platform**
-
-Initializes the platform by setting up the job holder and freelancer registry.
+Before creating or managing policies, the global policy system must be initialized by invoking:
 
 ```move
-public entry fun initialize_platform(admin: &signer)
+init_global_policy_system(account: &signer)
 ```
 
-### 2. **register_freelancer**
+This initializes a collection that will store all policies.
 
-Allows a freelancer to register on the platform.
+### 2. Create a New Policy
 
-```move
-public entry fun register_freelancer(freelancer: &signer)
-```
-
-### 3. **post_job**
-
-Clients can post new jobs, providing job details such as description, payment amount, and deadline.
+Creators can define new policies with attributes such as description, premium amount, payment frequency, and claimable limits:
 
 ```move
-public entry fun post_job(
-    client: &signer,
-    job_id: u64,
-    description: String,
-    payment_amount: u64,
-    job_deadline: u64
+create_policy(
+  account: &signer,
+  description: String,
+  premium_amount: u64,
+  yearly: bool,
+  max_claimable: u64,
+  type_of_policy: String
 )
 ```
 
-### 4. **accept_job**
+### 3. Purchase a Policy
 
-Freelancers can accept a job by its job ID.
-
-```move
-public entry fun accept_job(
-    freelancer: &signer,
-    job_id: u64
-)
-```
-
-### 5. **complete_job**
-
-Freelancers mark a job as completed once the task is done.
+Users (customers) can purchase a policy by its unique ID. This action transfers the premium amount to the policy creator:
 
 ```move
-public entry fun complete_job(
-    freelancer: &signer,
-    job_id: u64
-)
+purchase_policy(account: &signer, policy_id: u64)
 ```
 
-### 6. **pay_freelancer**
+### 4. Request a Claim
 
-Clients pay freelancers after the job is marked as completed. Payment is in **APT**.
+After purchasing a policy, customers can request a claim under the policy:
 
 ```move
-public entry fun pay_freelancer(
-    client: &signer,
-    job_id: u64,
-    payment_amount: u64
-)
+request_claim(account: &signer, policy_id: u64)
 ```
 
-### 7. **view_all_jobs**
+### 5. Verify a Claim
 
-Fetches all the jobs posted on the platform.
+The policy creator must verify and approve a claim request:
 
 ```move
-#[view]
-public fun view_all_jobs(): vector<Job>
+verify_claim(account: &signer, policy_id: u64, customer: address)
 ```
 
-### 8. **view_job_by_id**
+### 6. Payout for a Claim
 
-Fetches details of a specific job using its job ID.
+Once a claim is verified, the policy creator can initiate the payout process, transferring the claimable amount to the customer:
 
 ```move
-#[view]
-public fun view_job_by_id(job_id: u64): Job
+payout_claim(account: &signer, policy_id: u64)
 ```
 
-### 9. **view_jobs_by_client**
+### 7. View All Policies
 
-Fetches all jobs posted by a specific client.
+Retrieve a list of all policies in the system:
 
 ```move
-#[view]
-public fun view_jobs_by_client(client: address): vector<Job>
+view_all_policies(): vector<Policy>
 ```
 
-### 10. **view_jobs_by_freelancer**
+### 8. View Policy by ID
 
-Fetches all jobs accepted by a freelancer.
+Retrieve a specific policy by its ID:
 
 ```move
-#[view]
-public fun view_jobs_by_freelancer(freelancer: address): vector<Job>
+view_policy_by_id(policy_id: u64): Policy
 ```
 
-## Security
+### 9. View Policies by Creator
 
-- Ensure that the contract owner is the only entity able to initialize the platform.
-- Freelancers must be registered before they can accept jobs.
-- Payments are only made after job completion is verified, ensuring fair transactions.
+Retrieve all policies created by a specific creator:
 
-## Conclusion
+```move
+view_policies_by_creator(creator: address): vector<Policy>
+```
 
-This smart contract allows for seamless job management and payment solutions between clients and freelancers. It ensures trust and transparency, thanks to the immutable nature of the Aptos blockchain.
+### 10. View Policies by Customer
 
-If you have any questions about how to interact with the contract or need further assistance, feel free to reach out!
+Retrieve all policies a specific customer has purchased:
+
+```move
+view_policies_by_customer(customer: address): vector<Policy>
+```
+
+## Error Codes
+
+- `ERR_POLICY_NOT_FOUND (1)`: The specified policy does not exist.
+- `ERR_NOT_CUSTOMER (2)`: The caller is not a customer of the policy.
+- `ERR_PREMIUM_NOT_PAID (3)`: The premium has not been paid for the policy.
+- `ERR_CLAIM_ALREADY_MADE (4)`: The claim has already been made.
+- `ERR_NO_POLICIES (5)`: No policies exist in the system.
+- `ERR_ALREADY_INITIALIZED (6)`: The global policy system has already been initialized.
+- `ERR_CLAIM_NOT_ALLOWED (7)`: The claim is not allowed (e.g., not verified).
+- `ERR_UNAUTHORIZED (8)`: The caller is not authorized to perform the action.
+
+## Dependencies
+
+- **AptosCoin**: The contract utilizes the native Aptos coin for premium payments and claim payouts.
+- **Std Modules**: Includes standard modules like `signer`, `string`, `vector`, and `coin`.
