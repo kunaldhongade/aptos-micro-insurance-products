@@ -18,9 +18,9 @@ export const config: Config = {
 
   ourStory: {
     title: "Our Story",
-    subTitle: "Innovative Payment Platform on Aptos",
+    subTitle: "Innovative Insurance Platform on Aptos",
     description:
-      "Our Payment solution offers you to pay anyone and get your refund back if any problem occurred and your can view all your payments",
+      "Our Insurance Platform Offers Various Insurance Products to Protect Your Assets. We Provide a Secure and Transparent Platform for Buying and Selling Insurance. Join Our Community to Get Started!",
     discordLink: "https://discord.com",
     images: [Placeholder1, Placeholder2, Placeholder3],
   },
@@ -57,49 +57,42 @@ export const config: Config = {
 
     questions: [
       {
-        title: "What is the Global Payment System",
+        title: "What is Micro Insurance?",
         description:
-          "The Global Payment System is a decentralized application that allows users to make and receive payments securely using the Aptos blockchain. It provides functionalities for making payments, viewing payment history, and processing refunds.",
+          "Micro insurance is a type of insurance designed to be affordable for low-income individuals or groups, providing coverage for specific risks such as health, life, or property.",
       },
       {
-        title: "How do I make a payment?",
-        description: `To make a payment, follow these steps:
-        Navigate to the "Make Payment" section in the app.
-        Enter the payee's address and the amount you wish to send.
-        Click on the "Make Payment" button.
+        title: "How do I purchase an insurance policy?",
+        description: `To purchase an insurance policy, follow these steps:
+        Navigate to the "Buy Insurance" section in the app.
+        Select the type of insurance you need.
+        Fill in the required details and submit your application.
+        Make the payment through the available payment methods.
         Confirm the transaction in your connected wallet.`,
       },
       {
-        title: "Is there a limit on the payment amount?",
+        title: "What types of insurance products are available?",
         description:
-          "There is no fixed limit for payments in the Global Payment System. However, you should ensure that you have sufficient balance in your wallet to cover the amount you wish to send, including any transaction fees.",
+          "We offer a variety of insurance products including health insurance, life insurance, and property insurance. Each product is tailored to meet the specific needs of our customers.",
       },
       {
-        title: "How can I view my payment history?",
-        description: `You can view your payment history by navigating to the "Payments History" section of the app. This section will display all your past payments, including details such as payment ID, payer, payee, amount, and timestamp.`,
+        title: "How can I file a claim?",
+        description: `To file a claim, follow these steps:
+        Navigate to the "File a Claim" section in the app.
+        Provide the necessary details about the incident.
+        Submit any required documentation.
+        Our team will review your claim and get back to you with the next steps.`,
       },
       {
-        title: "What should I do if I cannot see my payment?",
-        description: `If you cannot see your payment in the history, consider the following:
-        Ensure that the transaction was successfully processed.
-        Refresh the payment history by clicking the "Refresh Payments" button.
-        Check your wallet for transaction confirmation.`,
+        title: "What should I do if I encounter an issue with my policy?",
+        description: `If you encounter an issue with your policy, consider the following:
+        Ensure that all your details are correctly entered.
+        Refresh the app and check your policy details again.
+        Contact our support team for further assistance.`,
       },
       {
-        title: "What should I do if I encounter an error during a transaction?",
-        description: `If you encounter an error while making a payment or processing a refund, try the following:
-
-        Check your internet connection.
-        Ensure that your wallet is connected and has sufficient funds.
-        Refresh the app and try again.
-        If the problem persists, contact our support team for assistance.`,
-      },
-      {
-        title: "What should I do if I cannot see my payment?",
-        description: `If you cannot see your payment in the history, consider the following:
-        Ensure that the transaction was successfully processed.
-        Refresh the payment history by clicking the "Refresh Payments" button.
-        Check your wallet for transaction confirmation.`,
+        title: "How can I view my policy details?",
+        description: `You can view your policy details by navigating to the "My Policies" section of the app. This section will display all your active policies, including coverage details, premium amounts, and expiration dates.`,
       },
     ],
   },
