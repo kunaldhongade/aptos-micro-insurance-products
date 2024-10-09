@@ -7,22 +7,40 @@ import { MODULE_ADDRESS } from "@/constants";
 import { aptosClient } from "@/utils/aptosClient";
 import { InputViewFunctionData } from "@aptos-labs/ts-sdk";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-import { Form, message, Tag, Typography } from "antd";
+import type { RadioChangeEvent } from "antd";
+import { Form, message, Radio, Select, Space, Tag, Typography } from "antd";
 import { useEffect, useState } from "react";
 const { Paragraph } = Typography;
 
 export function CreateCollection() {
   const { account, signAndSubmitTransaction } = useWallet();
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [paymentsCreatedBy, setPaymentsCreatedBy] = useState<Payment[]>([]);
-  const [paymentsReceivedBy, setPaymentsReceivedBy] = useState<Payment[]>([]);
+  const [policyCreatedBy, setPolicyCreatedBy] = useState<Policy[]>([]);
 
-  interface Payment {
-    payment_id: number;
-    payer: string;
-    payee: string;
-    amount: number;
-    msg: string;
+  const [value, setValue] = useState(true);
+
+  const onChange = (e: RadioChangeEvent) => {
+    console.log("radio checked", e.target.value);
+    setValue(e.target.value);
+  };
+
+  interface Policy {
+    id: number;
+    description: string;
+    premium_amount: number;
+    yearly: boolean;
+    type_of_policy: string;
+    claimable_amount: number;
+    max_claimable: number;
+    total_premium_collected: number;
+    creator: string;
+    customers: {
+      customer: string;
+      is_claimed: boolean;
+      is_requested: boolean;
+      is_verified: boolean;
+      premium_paid: boolean;
+    }[];
+    policy_id: number;
   }
 
   const convertAmountFromHumanReadableToOnChain = (value: number, decimal: number) => {
@@ -33,25 +51,26 @@ export function CreateCollection() {
     return value / Math.pow(10, decimal);
   };
 
-  const handleMakePayments = async (values: Payment) => {
+  const handleCreatePolicy = async (values: Policy) => {
     try {
-      const paymentAMT = convertAmountFromHumanReadableToOnChain(values.amount, 8);
+      const premiumAMT = convertAmountFromHumanReadableToOnChain(values.premium_amount, 8);
+      const maxClaimable = convertAmountFromHumanReadableToOnChain(values.max_claimable, 8);
 
-      if (!values.msg) {
-        values.msg = "None";
+      if (!values.description) {
+        values.description = "None";
       }
 
       const transaction = await signAndSubmitTransaction({
         sender: account?.address,
         data: {
-          function: `${MODULE_ADDRESS}::GlobalPaymentSystem::make_payment`,
-          functionArguments: [values.payee, paymentAMT, values.msg],
+          function: `${MODULE_ADDRESS}::MicroInsuranceSystem::create_policy`,
+          functionArguments: [values.description, premiumAMT, values.yearly, maxClaimable, values.type_of_policy],
         },
       });
 
       await aptosClient().waitForTransaction({ transactionHash: transaction.hash });
-      message.success("Payment is Successful!");
-      fetchAllPayments();
+      message.success("Policy is Created Successfully!");
+      fetchAllPoliciesByCreator();
     } catch (error) {
       if (typeof error === "object" && error !== null && "code" in error && (error as { code: number }).code === 4001) {
         message.error("Transaction rejected by user.");
@@ -63,23 +82,23 @@ export function CreateCollection() {
         }
         console.error("Transaction Error:", error);
       }
-      console.log("Error processing Payments.", error);
+      console.log("Error creating Policy.", error);
     }
   };
 
-  const handleRefundPayment = async (values: Payment) => {
+  const handleVerifyClaim = async (values: { policy_id: number; customer: string }) => {
     try {
       const transaction = await signAndSubmitTransaction({
         sender: account?.address,
         data: {
-          function: `${MODULE_ADDRESS}::GlobalPaymentSystem::refund_payment`,
-          functionArguments: [values.payment_id],
+          function: `${MODULE_ADDRESS}::MicroInsuranceSystem::verify_claim`,
+          functionArguments: [values.policy_id, values.customer],
         },
       });
 
       await aptosClient().waitForTransaction({ transactionHash: transaction.hash });
-      message.success("Refund is Successful!");
-      fetchAllPayments();
+      message.success("Claim is Verified!");
+      fetchAllPoliciesByCreator();
     } catch (error) {
       if (typeof error === "object" && error !== null && "code" in error && (error as { code: number }).code === 4001) {
         message.error("Transaction rejected by user.");
@@ -91,122 +110,105 @@ export function CreateCollection() {
         }
         console.error("Transaction Error:", error);
       }
-      console.log("Error Refund.", error);
+      console.log("Error Verifying Claim.", error);
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const fetchAllPayments = async () => {
+  const handlePayoutClaim = async (values: Policy) => {
     try {
-      const payload: InputViewFunctionData = {
-        function: `${MODULE_ADDRESS}::GlobalPaymentSystem::view_all_payments`,
-      };
+      const transaction = await signAndSubmitTransaction({
+        sender: account?.address,
+        data: {
+          function: `${MODULE_ADDRESS}::MicroInsuranceSystem::payout_claim`,
+          functionArguments: [values.policy_id],
+        },
+      });
 
-      const result = await aptosClient().view({ payload });
-
-      const paymentsList = result[0] as { id: number; payer: string; payee: string; amount: number; msg: string }[];
-
-      if (Array.isArray(paymentsList)) {
-        setPayments(
-          paymentsList.map((payment) => ({
-            payment_id: payment.id,
-            payer: payment.payer,
-            payee: payment.payee,
-            amount: payment.amount,
-            msg: payment.msg,
-          })),
-        );
-      } else {
-        setPayments([]);
-      }
+      await aptosClient().waitForTransaction({ transactionHash: transaction.hash });
+      message.success("Payout is Successful!");
+      fetchAllPoliciesByCreator();
     } catch (error) {
-      console.error("Failed to fetch Payments:", error);
+      if (typeof error === "object" && error !== null && "code" in error && (error as { code: number }).code === 4001) {
+        message.error("Transaction rejected by user.");
+      } else {
+        if (error instanceof Error) {
+          console.error(`Transaction failed: ${error.message}`);
+        } else {
+          console.error("Transaction failed: Unknown error");
+        }
+        console.error("Transaction Error:", error);
+      }
+      console.log("Error Paying Claim.", error);
     }
   };
 
-  const fetchAllPaymentsByPayee = async () => {
+  const fetchAllPoliciesByCreator = async () => {
     try {
       const WalletAddr = account?.address;
       const payload: InputViewFunctionData = {
-        function: `${MODULE_ADDRESS}::GlobalPaymentSystem::view_payments_by_payee`,
+        function: `${MODULE_ADDRESS}::MicroInsuranceSystem::view_policies_by_creator`,
         functionArguments: [WalletAddr],
       };
 
       const result = await aptosClient().view({ payload });
 
-      const paymentsList = result[0] as
-        | { id: number; payer: string; payee: string; amount: number; msg: string }[]
-        | undefined;
+      const policyList = result[0];
 
-      if (Array.isArray(paymentsList)) {
-        setPaymentsReceivedBy(
-          paymentsList.map((payment) => ({
-            payment_id: payment.id,
-            payer: payment.payer,
-            payee: payment.payee,
-            amount: payment.amount,
-            msg: payment.msg,
+      if (Array.isArray(policyList)) {
+        setPolicyCreatedBy(
+          policyList.map((policy) => ({
+            claimable_amount: policy.claimable_amount,
+            creator: policy.creator,
+            customers: policy.customers.map(
+              (customer: {
+                customer: string;
+                is_claimed: boolean;
+                is_requested: boolean;
+                is_verified: boolean;
+                premium_paid: boolean;
+              }) => ({
+                customer: customer.customer,
+                is_claimed: customer.is_claimed,
+                is_requested: customer.is_requested,
+                is_verified: customer.is_verified,
+                premium_paid: customer.premium_paid,
+              }),
+            ),
+            description: policy.description,
+            policy_id: policy.policy_id,
+            id: policy.id,
+            max_claimable: policy.max_claimable,
+            premium_amount: policy.premium_amount,
+            total_premium_collected: policy.total_premium_collected,
+            type_of_policy: policy.type_of_policy,
+            yearly: policy.yearly,
           })),
         );
       } else {
-        setPaymentsReceivedBy([]);
+        setPolicyCreatedBy([]);
       }
     } catch (error) {
-      console.error("Failed to payments done by address:", error);
-    }
-  };
-
-  const fetchAllPaymentsByPayer = async () => {
-    try {
-      const WalletAddr = account?.address;
-      const payload: InputViewFunctionData = {
-        function: `${MODULE_ADDRESS}::GlobalPaymentSystem::view_payments_by_payer`,
-        functionArguments: [WalletAddr],
-      };
-
-      const result = await aptosClient().view({ payload });
-
-      const paymentsList = result[0] as
-        | { id: number; payer: string; payee: string; amount: number; msg: string }[]
-        | undefined;
-
-      if (Array.isArray(paymentsList)) {
-        setPaymentsCreatedBy(
-          paymentsList.map((payment) => ({
-            payment_id: payment.id,
-            payer: payment.payer,
-            payee: payment.payee,
-            amount: payment.amount,
-            msg: payment.msg,
-          })),
-        );
-      } else {
-        setPaymentsCreatedBy([]);
-      }
-    } catch (error) {
-      console.error("Failed to payments done by address:", error);
+      console.error("Failed to get Policies by address:", error);
     }
   };
 
   useEffect(() => {
-    fetchAllPayments();
-    fetchAllPaymentsByPayer();
-    fetchAllPaymentsByPayee();
+    fetchAllPoliciesByCreator();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account, fetchAllPaymentsByPayer, fetchAllPaymentsByPayee]);
+  }, [account, fetchAllPoliciesByCreator]);
 
   return (
     <>
-      <LaunchpadHeader title="Create Job" />
+      <LaunchpadHeader title="Create Insurance Policy" />
       <div className="flex flex-col items-center justify-center px-4 py-2 gap-4 max-w-screen-xl mx-auto">
         <div className="w-full flex flex-col gap-y-4">
           <Card>
             <CardHeader>
-              <CardDescription>Make Payments</CardDescription>
+              <CardDescription>Create Policy</CardDescription>
             </CardHeader>
             <CardContent>
               <Form
-                onFinish={handleMakePayments}
+                onFinish={handleCreatePolicy}
                 labelCol={{
                   span: 4.04,
                 }}
@@ -221,21 +223,40 @@ export function CreateCollection() {
                   padding: "1.7rem",
                 }}
               >
-                <Form.Item label="Address" name="payee" rules={[{ required: true }]}>
-                  <Input placeholder="Enter Address of Payee" />
+                <Form.Item name="type_of_policy" label="Type of Policy" rules={[{ required: true }]}>
+                  <Select>
+                    <Select.Option value="Car_Insurance">Car Insurance</Select.Option>
+                    <Select.Option value="Bike_Insurance">Bike Insurance</Select.Option>
+                    <Select.Option value="Home_Insurance">Home Insurance</Select.Option>
+                    <Select.Option value="Life_Insurance">Life Insurance</Select.Option>
+                    <Select.Option value="Term_Insurance">Term Insurance</Select.Option>
+                    <Select.Option value="Other_Insurance">Other Insurance</Select.Option>
+                  </Select>
+                </Form.Item>
+                <Form.Item label="Description" name="description" rules={[{ required: true }]}>
+                  <Input placeholder="Enter Description" />
                 </Form.Item>
 
-                <Form.Item label="Payment Amount" name="payment_amount" rules={[{ required: true }]}>
-                  <Input placeholder="Enter Your Amount" />
+                <Form.Item label="Premium Amount" name="premium_amount" rules={[{ required: true }]}>
+                  <Input placeholder="Enter Your Premium Amount" />
                 </Form.Item>
 
-                <Form.Item label="Message" name="msg" rules={[{ required: true }]}>
-                  <Input placeholder="Enter Message" />
+                <Form.Item label="Claim Amount" name="max_claimable" rules={[{ required: true }]}>
+                  <Input placeholder="Enter Your Claim Amount" />
+                </Form.Item>
+
+                <Form.Item label="Choose Premium type" name="yearly" rules={[{ required: true }]}>
+                  <Radio.Group onChange={onChange} value={value}>
+                    <Space direction="horizontal">
+                      <Radio value={true}>Yearly</Radio>
+                      <Radio value={false}>Only Once</Radio>
+                    </Space>
+                  </Radio.Group>
                 </Form.Item>
 
                 <Form.Item>
                   <Button variant="submit" size="lg" className="text-base w-full" type="submit">
-                    Make Payment
+                    Create Insurance
                   </Button>
                 </Form.Item>
               </Form>
@@ -244,11 +265,11 @@ export function CreateCollection() {
 
           <Card>
             <CardHeader>
-              <CardDescription>Refund Payment</CardDescription>
+              <CardDescription>Verify Claim</CardDescription>
             </CardHeader>
             <CardContent>
               <Form
-                onFinish={handleRefundPayment}
+                onFinish={handleVerifyClaim}
                 labelCol={{
                   span: 4.04,
                 }}
@@ -263,13 +284,51 @@ export function CreateCollection() {
                   padding: "1.7rem",
                 }}
               >
-                <Form.Item label="Payment ID" name="payment_id" rules={[{ required: true }]}>
+                <Form.Item label="Policy ID" name="policy_id" rules={[{ required: true }]}>
+                  <Input placeholder="eg. 1001" />
+                </Form.Item>
+
+                <Form.Item label="Customer Address" name="customer" rules={[{ required: true }]}>
+                  <Input placeholder="eg. 0x0" />
+                </Form.Item>
+
+                <Form.Item>
+                  <Button variant="submit" size="lg" className="text-base w-full" type="submit">
+                    Verify Claim
+                  </Button>
+                </Form.Item>
+              </Form>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardDescription>Payout All Claim</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form
+                onFinish={handlePayoutClaim}
+                labelCol={{
+                  span: 4.04,
+                }}
+                wrapperCol={{
+                  span: 100,
+                }}
+                layout="horizontal"
+                style={{
+                  maxWidth: 1000,
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "0.5rem",
+                  padding: "1.7rem",
+                }}
+              >
+                <Form.Item label="Policy ID" name="policy_id" rules={[{ required: true }]}>
                   <Input placeholder="eg. 1001" />
                 </Form.Item>
 
                 <Form.Item>
                   <Button variant="submit" size="lg" className="text-base w-full" type="submit">
-                    Refund
+                    Pay All Claims
                   </Button>
                 </Form.Item>
               </Form>
@@ -278,97 +337,74 @@ export function CreateCollection() {
 
           <Card>
             <CardHeader>
-              <CardDescription>Get Payments done by You</CardDescription>
+              <CardDescription>Get Policies Created By You</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="p-2">
-                {paymentsCreatedBy.map((payment, index) => (
+                {policyCreatedBy.map((policy, index) => (
                   <Card key={index} className="mb-6 shadow-lg p-4">
-                    <p className="text-sm text-gray-500 mb-4">Payments ID: {payment.payment_id}</p>
+                    <p className="text-sm text-gray-500 mb-4">Policy ID: {policy.id}</p>
                     <Card style={{ marginTop: 16, padding: 16 }}>
-                      {payment && (
+                      {policy && (
                         <div>
                           <Paragraph>
-                            <strong>Amount:</strong>{" "}
-                            <Tag>{convertAmountFromOnChainToHumanReadable(payment.amount, 8)}</Tag>
+                            <strong>Type:</strong> {policy.type_of_policy}
                           </Paragraph>
                           <Paragraph>
-                            <strong>Client:</strong> <Tag>{payment.payee}</Tag>
+                            <strong>Creator:</strong> <Tag>{policy.creator}</Tag>
                           </Paragraph>
                           <Paragraph>
-                            <strong>freelancer:</strong> <Tag>{payment.payer}</Tag>
+                            <strong>Premium Amount:</strong>{" "}
+                            <Tag>{convertAmountFromOnChainToHumanReadable(policy.premium_amount, 8)}</Tag>
                           </Paragraph>
-                          <Paragraph>
-                            <strong>Message:</strong> {payment.msg}
-                          </Paragraph>
-                        </div>
-                      )}
-                    </Card>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardDescription>Get Payments You Received</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="p-2">
-                {paymentsReceivedBy.map((payment, index) => (
-                  <Card key={index} className="mb-6 shadow-lg p-4">
-                    <p className="text-sm text-gray-500 mb-4">Payments ID: {payment.payment_id}</p>
-                    <Card style={{ marginTop: 16, padding: 16 }}>
-                      {payment && (
-                        <div>
                           <Paragraph>
-                            <strong>Amount:</strong>{" "}
-                            <Tag>{convertAmountFromOnChainToHumanReadable(payment.amount, 8)}</Tag>
+                            <strong>Description:</strong> {policy.description}
                           </Paragraph>
-                          <Paragraph>
-                            <strong>Client:</strong> <Tag>{payment.payee}</Tag>
-                          </Paragraph>
-                          <Paragraph>
-                            <strong>freelancer:</strong> <Tag>{payment.payer}</Tag>
-                          </Paragraph>
-                          <Paragraph>
-                            <strong>Message:</strong> {payment.msg}
-                          </Paragraph>
-                        </div>
-                      )}
-                    </Card>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardDescription>All Payments on the Platform</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="p-2">
-                {payments.map((payment, index) => (
-                  <Card key={index} className="mb-6 shadow-lg p-4">
-                    <p className="text-sm text-gray-500 mb-4">Payments ID: {payment.payment_id}</p>
-                    <Card style={{ marginTop: 16, padding: 16 }}>
-                      {payment && (
-                        <div>
                           <Paragraph>
-                            <strong>Amount:</strong>{" "}
-                            <Tag>{convertAmountFromOnChainToHumanReadable(payment.amount, 8)}</Tag>
+                            <strong>Claimable Amount:</strong>{" "}
+                            <Tag>{convertAmountFromOnChainToHumanReadable(policy.max_claimable, 8)}</Tag>
                           </Paragraph>
+
                           <Paragraph>
-                            <strong>Client:</strong> <Tag>{payment.payee}</Tag>
+                            <strong>Total Premium Collected:</strong>{" "}
+                            <Tag>{convertAmountFromOnChainToHumanReadable(policy.total_premium_collected, 8)}</Tag>
                           </Paragraph>
+
                           <Paragraph>
-                            <strong>freelancer:</strong> <Tag>{payment.payer}</Tag>
+                            <strong>Payment Type:</strong> <Tag>{policy.customers.length}</Tag>
                           </Paragraph>
+
                           <Paragraph>
-                            <strong>Message:</strong> {payment.msg}
+                            <strong>Total Customers</strong> <Tag>{policy.yearly ? "Annually" : "Once"}</Tag>
                           </Paragraph>
+
+                          {policy.customers.length > 0 ? (
+                            <Card style={{ marginTop: 16, padding: 16 }}>
+                              {policy.customers.map((customer, idx) => (
+                                <div key={idx} className="mb-4">
+                                  <Paragraph>
+                                    <strong>Customer:</strong> <Tag>{customer.customer}</Tag>
+                                  </Paragraph>
+                                  <Paragraph>
+                                    <strong>Claimed:</strong> <Tag>{customer.is_claimed ? "Yes" : "No"}</Tag>
+                                  </Paragraph>
+                                  <Paragraph>
+                                    <strong>Requested:</strong> <Tag>{customer.is_requested ? "Yes" : "No"}</Tag>
+                                  </Paragraph>
+                                  <Paragraph>
+                                    <strong>Verified:</strong> <Tag>{customer.is_verified ? "Yes" : "No"}</Tag>
+                                  </Paragraph>
+                                  <Paragraph>
+                                    <strong>Premium Paid:</strong> <Tag>{customer.premium_paid ? "Yes" : "No"}</Tag>
+                                  </Paragraph>
+                                </div>
+                              ))}
+                            </Card>
+                          ) : (
+                            <Paragraph>No Customers Found for this Policy. </Paragraph>
+                          )}
                         </div>
                       )}
                     </Card>
