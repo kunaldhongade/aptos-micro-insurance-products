@@ -6,7 +6,7 @@ Welcome to the **Micro-Insurance System** frontend, a decentralized application 
 
 ## 🔗 Links
 
-- **Live Demo**: [Micro-Insurance System](https://micro-insurance.vercel.app/)
+- **Live Demo**: [Micro-Insurance System](https://aptos-micro-insurance-products-orcin.vercel.app/)
 - **Smart Contract Explorer**: [Aptos Explorer](https://explorer.aptoslabs.com/account/0x2abb1ab290cb828323bf6da71a3f36011d59cd7aa576474f19dbcae50521e056/modules/code/MicroInsuranceSystem?network=testnet)
 
 ---
